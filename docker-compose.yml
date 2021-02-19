@@ -1,0 +1,46 @@
+version: "3.8"
+volumes:
+  php-fpm-socket:
+  db-store:
+services:
+  app:
+    image: azum/lara7app:1.0.0
+    build:
+      context: .
+      dockerfile: ./infra/docker/php/Dockerfile
+    volumes:
+      - php-fpm-socket:/var/run/php-fpm
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_NAME:-laraveldb}
+      - DB_USERNAME=${DB_USER:-laraveluser}
+      - DB_PASSWORD=${DB_PASS:-laravelpw}
+
+  web:
+    image: azum/lara7web:1.0.0
+    build:
+      context: .
+      dockerfile: ./infra/docker/nginx/Dockerfile
+    depends_on:
+      - app
+    ports:
+      - ${WEB_PORT:-80}:80
+    volumes:
+      - php-fpm-socket:/var/run/php-fpm
+
+  db:
+    image: azum/lara7db:1.0.0
+    build:
+      context: .
+      dockerfile: ./infra/docker/mysql/Dockerfile
+    ports:
+      - ${DB_PORT:-3306}:3306
+    volumes:
+      - db-store:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=${DB_NAME:-laraveldb}
+      - MYSQL_USER=${DB_USER:-laraveluser}
+      - MYSQL_PASSWORD=${DB_PASS:-laravelpw}
+      - MYSQL_ROOT_PASSWORD=${DB_PASS:-laravelpw}
